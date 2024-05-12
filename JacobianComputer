@@ -1,0 +1,140 @@
+get_twist_curve := function(affine_func)
+     univariate := UnivariatePolynomial(Evaluate(affine_func, x, 0)); 
+     irred_factor := Factorization(univariate)[1][1];
+     if Degree(irred_factor) eq 1 then
+         L := RationalField();
+         root := Roots(irred_factor)[1][1];
+     else
+         L := SplittingField(irred_factor);
+         root := Basis(L)[2];
+     end if;
+ 
+     affine_ext := AffineSpace(L, 2);
+     affine_curve := Curve(affine_ext, affine_func);
+     proj_curve<X, Y, Z> := ProjectiveClosure(affine_curve);
+     rat_point := proj_curve ! [0, root];
+     
+     Eprime:= EllipticCurve(proj_curve, rat_point);
+     j:= jInvariant(Eprime);
+     if j eq 0 or j eq 1728 then
+         return "Fail";
+     else
+         A := 3*j*(1728 - j);
+         B := 2*j*(1728 - j)^2;
+     end if;
+     E := EllipticCurve([A, B]);
+     
+     WE := WeierstrassModel(Eprime);
+     aInvars := aInvariants(WE);
+     Aprime := aInvars[4];
+     Bprime := aInvars[5];
+     
+     int_poly_ring<z> := PolynomialRing(L);
+     lambda := z^2 - ((Bprime * A) / (Aprime * B));
+     Lprime := AbsoluteField(ext<L | lambda>);
+     
+     E := BaseChange(E, Lprime);
+     E := WeierstrassModel(E);
+     aInvars := aInvariants(E);
+     A := aInvars[4];
+     B := aInvars[5];
+     int_poly_ring<z> := PolynomialRing(Lprime);
+     f := z^3 + A*z + B;
+     for i in [0..3] do
+        d := Evaluate(f, i);
+        if not d eq 0 then
+            d_poly := z^2 - d;
+            if not IsIrreducible(d_poly) then
+                F := Lprime;
+            else
+                F := AbsoluteField(ext<Lprime | d_poly>);
+            end if;
+            C := BaseChange(proj_curve, F);
+            
+            root := Roots(univariate, F)[1][1];
+            rat_point_C := C ! [0, root];
+            sqrt_d := Roots(d_poly, F)[1][1];
+            E := BaseChange(E, F);
+            rat_point_E := E ! [i, sqrt_d];
+            break;
+        end if;
+     end for;
+     E := WeierstrassModel(E);
+     Eprime, map_schm := EllipticCurve(C, rat_point_C);
+     bool, map_schm_inverse := IsInvertible(map_schm);
+     iso_one := iso<C -> Eprime | DefiningPolynomials(map_schm), 
+                                  DefiningPolynomials(map_schm_inverse)>;  
+     success, iso_two := IsIsomorphic(E, Eprime);
+     if success then
+         iso := iso_one * Inverse(iso_two);
+         return C, E, iso, F, rat_point_E, j, rat_point_C, F;
+     else
+         return "Error, possibly not genus 1";
+     end if;
+end function;
+
+auto_action_on_iso := function(iso, auto)
+     polys := DefiningPolynomials(iso);
+     new_polys := [];
+     for poly in polys do
+         coeffs := Coefficients(poly);
+         monomials := Monomials(poly);
+         new_poly := auto(coeffs[1]) * monomials[1];
+        for i in [2..#coeffs] do
+             new_poly := new_poly + auto(coeffs[i]) * monomials[i];
+         end for;
+         new_polys := Append(new_polys, new_poly);
+     end for;
+     return new_polys;
+end function;
+
+get_fixed_field := function(C, E, iso, F, second_rat_point)
+     gal := Automorphisms(F);
+     ker := [];
+     for sigma in gal do
+         iso_polys := auto_action_on_iso(iso, sigma);
+         iso_inv_polys := auto_action_on_iso(Inverse(iso), sigma);
+         iso_sigma := iso<C -> E | iso_polys, iso_inv_polys>;
+         varphi_sigma := Inverse(iso) * iso_sigma;
+         P := varphi_sigma(Id(E));
+         difference := varphi_sigma(second_rat_point) - second_rat_point;
+         if difference eq P then
+             ker := Append(ker, sigma);
+         end if;
+     end for;
+     return FixedField(F, ker);
+end function;
+
+get_jacobian := function(K, embedding, E, iso, F)
+    aInvars := aInvariants(E);
+    A := RationalField() ! aInvars[4];
+    B := RationalField() ! aInvars[5];
+    
+    disc := Discriminant(DefiningPolynomial(K));
+    int_poly_ring<z> := PolynomialRing(RationalField());
+    sqrt_d := z^2 - disc;
+    
+    if not IsIrreducible(sqrt_d) then
+        sqrt_d := Roots(sqrt_d, RationalField())[1][1];
+    else 
+        sqrt_d := Roots(sqrt_d, K)[1][1];
+    end if;
+    
+    jacobian := EllipticCurve([RationalField() ! (sqrt_d^4 * A),
+                               RationalField() ! (sqrt_d^6 * B)]);
+    coord_ring<X, Y, Z> := AmbientSpace(E);
+    
+    chi_d_polys := [X * embedding(sqrt_d^2), Y * embedding(sqrt_d^3), Z];
+    chi_d_inv_polys := [X * (1 / embedding(sqrt_d^2)),
+                        Y * (1 / embedding(sqrt_d^3)), Z];
+    jac_ext := BaseChange(jacobian, F);
+    chi_d := iso<E -> jac_ext | chi_d_polys, chi_d_inv_polys>;
+    return jacobian, chi_d, jac_ext;
+end function;
+
+get_jac_curve := function(g)
+    C, E, iso ,F, rp, j := get_twist_curve(g);
+    K, embedding := get_fixed_field(C, E, iso, F, rp);
+    jac, chi_d, jac_ext := get_jacobian(K, embedding, E, iso, F);
+    return jac, iso * chi_d;
+end function;
