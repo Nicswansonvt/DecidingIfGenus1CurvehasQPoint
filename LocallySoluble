@@ -1,0 +1,12 @@
+BadPrimeComputer := function(f)
+    C := Curve(AffineSpace(Rationals(), 2), f);
+    h := UnivariatePolynomial(Resultant(f, Derivative(f, x), y));
+    UPR := Parent(h);
+    k := UPR ! UnivariatePolynomial(Resultant(f, Derivative(f, y), y)); 
+    gcd := GCD(h, k);
+    a := UPR ! (h / gcd);
+    b := UPR ! (k / gcd);
+    R := Resultant(a, b);
+    factorization := Factorisation(Integers() ! R);
+    return factorization;
+end function;
