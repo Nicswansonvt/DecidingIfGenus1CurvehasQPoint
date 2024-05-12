@@ -1,0 +1,16 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Deciding if a Genus 1 Curve has a Point
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Nicolas Swanson
+    email: nicswanson@vt.edu
+    affiliation: Virginia Tech
+repository-code: >-
+  https://github.com/Nicswansonvt/DecidingIfGenus1CurvehasQPoint
+license: MIT
