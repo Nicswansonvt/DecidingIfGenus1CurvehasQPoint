@@ -1,0 +1,48 @@
+action_orbit := function(Q)
+    phi := iso * chi_d;
+    EcP := phi(Q);
+    for n in [1 .. 200] do
+        EcT := (n * P) + EcP;
+        curvePt := Inverse(phi)(EcT);
+        xCoord := RealField(6) ! RealEmbeddings(curvePt[1])[1];
+        yCoord := RealField(6) ! RealEmbeddings(curvePt[2])[1];
+        [xCoord, yCoord];
+    end for;
+end function;
+
+torsion_orbit := function(Q, TorP)
+    phi := iso * chi_d;
+    polys := DefiningPolynomials(phi);
+    phi_polys := [];
+    for poly in polys do
+         coeffs := Coefficients(poly);
+         monomials := Monomials(poly);
+         PR := ChangeRing(Parent(monomials[1]), QBar);
+         new_poly := (QBar ! coeffs[1]) * PR ! monomials[1];
+        for i in [2..#coeffs] do
+             new_poly := new_poly + (QBar ! coeffs[i]) * PR ! monomials[i];
+         end for;
+         phi_polys := Append(phi_polys, new_poly);
+     end for;
+    polys := DefiningPolynomials(Inverse(phi));
+    phi_inv_polys := [];
+    for poly in polys do
+         coeffs := Coefficients(poly);
+         monomials := Monomials(poly);
+         PR := ChangeRing(Parent(monomials[1]), QBar);
+         new_poly := (QBar ! coeffs[1]) * PR ! monomials[1];
+        for i in [2..#coeffs] do
+             new_poly := new_poly + (QBar ! coeffs[i]) * PR ! monomials[i];
+         end for;
+         phi_inv_polys := Append(phi_inv_polys, new_poly);
+     end for;
+    phi_inv := iso<jac_ext_QBar -> CQBar | phi_inv_polys, phi_polys>;
+    EcP := jac_ext_QBar ! phi(Q);
+    for n in [1 .. 100] do
+        EcT := (n * P) + EcP + TorP;
+        curvePt := phi_inv(EcT);
+        xCoord := RealField(6) ! RealEmbeddings(curvePt[1])[1];
+        yCoord := RealField(6) ! RealEmbeddings(curvePt[2])[1];
+        [xCoord, yCoord];
+    end for;
+end function;
