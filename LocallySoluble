@@ -7,6 +7,6 @@ BadPrimeComputer := function(f)
     a := UPR ! (h / gcd);
     b := UPR ! (k / gcd);
     R := Resultant(a, b);
-    factorization := Factorisation(Integers() ! R);
+    factorization := Factorisation(Integers() ! Numerator(R));
     return factorization;
 end function;
