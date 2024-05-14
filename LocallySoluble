@@ -1,5 +1,5 @@
 BadPrimeComputer := function(f)
-    C := Curve(AffineSpace(Rationals(), 2), f);
+    C := Curve(AffineSpace(CoefficientRing(Parent(f)), 2), f);
     h := UnivariatePolynomial(Resultant(f, Derivative(f, x), y));
     UPR := Parent(h);
     k := UPR ! UnivariatePolynomial(Resultant(f, Derivative(f, y), y)); 
