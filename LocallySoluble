@@ -1,4 +1,13 @@
 C := Curve(AffineSpace(CoefficientRing(Parent(f)), 2), f);
+CurveToIntegralPolynomial := function(C)
+    f := DefiningPolynomial(C);
+    denom := [];
+    for coeff in Coefficients(f) do
+        denom := Append(denom, Denominator(coeff));
+    end for;
+    denom := LCM(denom);
+    return f * denom;
+end function;
 BadPrimeComputer := function(f)
     PR := Parent(f);
     x := PR.1;
@@ -27,3 +36,11 @@ BadPrimesForReal := function(f)
     end for;
     return BadPrimes;
 end function;
+
+d := 6;
+S := [2, 1];
+P := ProjectivePlane(Rationals());
+C := RandomPlaneCurve(d, S, P);
+f := CurveToIntegralPolynomial(AffinePatch(C, 1));
+BadPrimeComputer(f);
+
