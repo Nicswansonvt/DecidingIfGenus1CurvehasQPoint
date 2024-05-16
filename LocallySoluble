@@ -47,9 +47,9 @@ BadPrimesForReal := function(f, range)
     return BadPrimes;
 end function;
 
-RandomTest := function(d, S)
+RandomTest := function(d, S: RandomBound := 9)
     P := ProjectivePlane(Rationals());
-    C := RandomPlaneCurve(d, S, P);
+    C := RandomPlaneCurve(d, S, P: RandomBound := RandomBound);
     f := CurveToIntegralPolynomial(AffinePatch(C, 1));
     computed_bad_primes := BadPrimeComputer(f);
     real_bad_primes := BadPrimesForReal(f, 1000);
@@ -61,19 +61,16 @@ RandomTest := function(d, S)
     return true;
 end function;
 
-ManyTests := function(NumTests)
-    d := 4;
-    S := [0];
+ManyTests := function(NumTests, d, S)
     for i in [1..NumTests] do
         printf "Test number %o \n", i ;
         v := RandomTest(d, S);
         if v ne true then
-            return f;
+            printf "Failed\n";
+            return false;
             break;
         end if;
+        printf "Passed\n";
     end for;
+    return true;
 end function;
-
-
-
-
