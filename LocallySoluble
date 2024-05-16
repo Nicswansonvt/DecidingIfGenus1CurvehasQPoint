@@ -8,7 +8,7 @@ PolynomialMakeIntergal := function(f)
 end function;
 
 CurveToIntegralPolynomial := function(C)
-    return PolynomialMakeIntergal(f);
+    return PolynomialMakeIntergal(DefiningPolynomial(C));
 end function;
 
 BadPrimeComputer := function(f)
@@ -22,12 +22,12 @@ BadPrimeComputer := function(f)
     a := UPR ! (h div gcd);
     b := UPR ! (k div gcd);
     R := Resultant(a, b);
-    factorization := Factorisation(Integers() ! Numerator(R));
+    factorization := PrimeDivisors(Integers() ! Numerator(R));
     return factorization;
 end function;
 
 BadPrimesForReal := function(f, range)
-    C := Curve(AffineSpace(CoefficientRing(Parent(f)), 2), f);
+    C := Curve(AffineSpace(AlgebraicClosure(Rationals()), 2), [f]);
     p := 2;
     BadPrimes := [];
     for i in [1..range] do
@@ -47,10 +47,24 @@ BadPrimesForReal := function(f, range)
     return BadPrimes;
 end function;
 
+RandomTest := function(d, S)
+    P := ProjectivePlane(Rationals());
+    C := RandomPlaneCurve(d, S, P);
+    f := CurveToIntegralPolynomial(AffinePatch(C, 1));
+    computed_bad_primes := BadPrimeComputer(f);
+    real_bad_primes := BadPrimesForReal(1000);
+    if real_bad_primes notsubset computed_bad_primes then
+        printf("%o\n%o\n%o\n\n When x and y switched:\n", f, computed_bad_primes, real_bad_primes);
+        printf("%o\n", BadPrimeComputer(Evaluate(f, [Parent(f).2, Parent(f).1])));
+        return f;
+    end if;
+    return true;
+end function;
+
 d := 4;
-S := [2, 0];
-P := ProjectivePlane(Rationals());
-C := RandomPlaneCurve(d, S, P);
-f := CurveToIntegralPolynomial(AffinePatch(C, 1));
-BadPrimeComputer(f);
+S := [0];
+for i in [1..100] do
+    RandomTest(d, S)
+end for;
+
 
