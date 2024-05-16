@@ -1,6 +1,4 @@
-
-CurveToIntegralPolynomial := function(C)
-    f := DefiningPolynomial(C);
+PolynomialMakeIntergal := function(f)
     denom := [];
     for coeff in Coefficients(f) do
         denom := Append(denom, Denominator(coeff));
@@ -8,6 +6,11 @@ CurveToIntegralPolynomial := function(C)
     denom := LCM(denom);
     return f * denom;
 end function;
+
+CurveToIntegralPolynomial := function(C)
+    return PolynomialMakeIntergal(f);
+end function;
+
 BadPrimeComputer := function(f)
     PR := Parent(f);
     x := PR.1;
