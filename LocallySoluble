@@ -37,8 +37,8 @@ BadPrimesForReal := function(f)
     return BadPrimes;
 end function;
 
-d := 6;
-S := [2, 1];
+d := 5;
+S := [1, 1];
 P := ProjectivePlane(Rationals());
 C := RandomPlaneCurve(d, S, P);
 f := CurveToIntegralPolynomial(AffinePatch(C, 1));
