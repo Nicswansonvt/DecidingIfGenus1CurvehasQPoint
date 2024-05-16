@@ -52,19 +52,28 @@ RandomTest := function(d, S)
     C := RandomPlaneCurve(d, S, P);
     f := CurveToIntegralPolynomial(AffinePatch(C, 1));
     computed_bad_primes := BadPrimeComputer(f);
-    real_bad_primes := BadPrimesForReal(1000);
+    real_bad_primes := BadPrimesForReal(f, 1000);
     if real_bad_primes notsubset computed_bad_primes then
-        printf("%o\n%o\n%o\n\n When x and y switched:\n", f, computed_bad_primes, real_bad_primes);
-        printf("%o\n", BadPrimeComputer(Evaluate(f, [Parent(f).2, Parent(f).1])));
+        printf "%o\n%o\n%o\n\n When x and y switched:\n", f, computed_bad_primes, real_bad_primes;
+        printf "%o\n", BadPrimeComputer(Evaluate(f, [Parent(f).2, Parent(f).1]));
         return f;
     end if;
     return true;
 end function;
 
-d := 4;
-S := [0];
-for i in [1..100] do
-    RandomTest(d, S)
-end for;
+ManyTests := function(NumTests)
+    d := 4;
+    S := [0];
+    for i in [1..NumTests] do
+        printf "Test number %o \n", i ;
+        v := RandomTest(d, S);
+        if v ne true then
+            return f;
+            break;
+        end if;
+    end for;
+end function;
+
+
 
 
