@@ -1,12 +1,29 @@
+C := Curve(AffineSpace(CoefficientRing(Parent(f)), 2), f);
 BadPrimeComputer := function(f)
-    C := Curve(AffineSpace(CoefficientRing(Parent(f)), 2), f);
+    PR := Parent(f);
+    x := PR.1;
+    y := PR.2;
     h := UnivariatePolynomial(Resultant(f, Derivative(f, x), y));
     UPR := Parent(h);
     k := UPR ! UnivariatePolynomial(Resultant(f, Derivative(f, y), y)); 
     gcd := GCD(h, k);
-    a := UPR ! (h / gcd);
-    b := UPR ! (k / gcd);
+    a := UPR ! (h div gcd);
+    b := UPR ! (k div gcd);
     R := Resultant(a, b);
     factorization := Factorisation(Integers() ! Numerator(R));
     return factorization;
+end function;
+
+BadPrimesForReal := function(f)
+    p := 2;
+    BadPrimes := [];
+    for i in [1..100] do
+        fp := PolynomialRing(GF(p), 2) ! f;
+        Cp := Curve(AffineSpace(CoefficientRing(Parent(fp)), 2), fp);
+        if #SingularPoints(Cp) ne 0 then
+            BadPrimes := Append(BadPrimes, p);
+        end if;
+        p := NextPrime(p);
+    end for;
+    return BadPrimes;
 end function;
