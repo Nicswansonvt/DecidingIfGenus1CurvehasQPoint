@@ -24,20 +24,52 @@ SingularPlaneModel := function(C)
 end function;
 
 /*
+    Input: A sequence of nonzero univariate polynomials of length at least 2. An integer, whos sign tells whether or not to evaluate the sequence at plus or minus infinity.
+    Output: The number of sign variations in the sequence.
+*/
+SignVariations := function(polyseq, sign)
+    valuations := [];
+    for poly in polyseq do
+        if sign gt 0 then
+            valuations := Append(valuations, LeadingCoefficient(poly));
+        else
+            if IsOdd(Degree(poly)) then
+                valuations := Append(valuations, -LeadingCoefficient(poly));
+            else
+                valuations := Append(valuations, LeadingCoefficient(poly));
+            end if;
+        end if;
+    end for;
+
+    changes := 0;
+    for i in [1..#polyseq - 2] do
+        if valuations[i] * valuations[i + 1] lt 0 then
+            changes := changes + 1;
+        end if;
+    end for;
+    return changes;
+end function;
+
+/*
     Input: An irreducible univariate polynomial f.
     Output: true if f(x) = 0 has a root in the real numbers. false otherwise.
 */
 HasRealRoot := function(f)
+    if Degree(f) eq 0 then
+        return f eq 0;
+    end if;
+
     fi := f;
     fi1 := Derivative(f);
     remainders := [fi, fi1];
-    while fi1 ne 0 do
+    while Degree(fi1) ne 0 do
         r := -(fi mod fi1);
         remainders := Append(remainders, r);
         fi := fi1;
         fi1 := r;
     end while;
-    
+
+    return SignVariations(remainders, -1) - SignVariations(remainders, 1) gt 0;
 end function;
 
 /*
@@ -75,14 +107,15 @@ HasRealSolution := function(f)
     k := k div GCD(k, Derivative(k));
 
     D := Discriminant(h) * (1 / Discriminant(k));
-    m := 0;
-    while Evaluate(fn, [m, 1]) eq 0 or GCD(m, Numerator(D)) eq 1 do
+    m := 1;
+    while Evaluate(fn, [m, 1]) eq 0 or Numerator(D) mod m eq 0 do
         m := m + 1;
     end while;
 
     H := Resultant(Evaluate(f, [m*(x + y), y]), Evaluate(g, [m*(x + y), y]), y);
+    H := UnivariatePolynomial(H);
 
-    return HasRealRoot(H);    
+    return HasRealRoot(H);
 end function;
 
 /*
