@@ -1,3 +1,41 @@
+/*
+    Input: A Crv C defined over Q.
+    Output: A projective plane curve C' defined over Q and a map proj such that proj is an isomorphism from C to C' away from the singular points of C'.
+*/
+SingularPlaneModel := function(C)
+    if IsAffine(C) then
+        C := ProjectiveClosure(C);
+    end if;
+    Cnew := C;
+    map := IdentityMap(Ambient(C));
+    while IsPlaneCurve(Cnew) eq false do
+        p := [1];
+        for i in [1..Dimension(Ambient(Cnew))] do
+            p := Append(p, 0);
+        end for;
+        p := Ambient(Cnew) ! p;
+        if p in Cnew then
+            return true;
+        end if;
+        Cnew, mapnew := Projection(Cnew);
+        map := map * mapnew;
+    end while;
+    return Cnew, Restriction(map, C, Cnew);
+end function;
+
+/*
+    Input: A Crv C defined over Q.
+    Output: true if C(Qp) has a point for all padic numbers. false otherwise.
+*/
+IsLocallySoluble := function(C)
+    C := SingularPlaneModel(C);
+    if #SingularPoints(C) gt 0 then
+        return true;
+    end if;
+
+
+end function;
+
 PolynomialMakeIntergal := function(f)
     denom := [];
     for coeff in Coefficients(f) do
