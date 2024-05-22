@@ -23,7 +23,67 @@ SingularPlaneModel := function(C)
     return Cnew, Restriction(map, C, Cnew);
 end function;
 
+/*
+    Input: An irreducible univariate polynomial f.
+    Output: true if f(x) = 0 has a root in the real numbers. false otherwise.
+*/
+HasRealRoot := function(f)
+    fi := f;
+    fi1 := Derivative(f);
+    remainders := [fi, fi1];
+    while fi1 ne 0 do
+        r := -(fi mod fi1);
+        remainders := Append(remainders, r);
+        fi := fi1;
+        fi1 := r;
+    end while;
+    
+end function;
 
+/*
+    Input: An irreducible bivariate polynomial f.
+    Output: true if f(x, y) = 0 has a solution in the real numbers. false otherwise.
+*/
+HasRealSolution := function(f)
+    P<x, y> := PolynomialRing(Rationals(), 2);
+    f := P ! f;
+    n := Degree(f);
+
+    if n eq 0 then
+        return f eq 0;
+    end if;
+    if Degree(f, y) eq 0 then
+        f := Evaluate(f, [y, x]);
+    end if;
+
+    fn := P ! 0;
+    for term in Terms(f) do
+        if Degree(term) eq n then
+            fn := fn + term;
+        end if;
+    end for;
+
+    g := y * Derivative(f, x) - x * Derivative(f, y);
+    c := 1;
+    while GCD(f, g) ne 1 do
+        g := y * Derivative(f, x) - (x - c) * Derivative(f, y);
+        c := c + 1;
+    end while;
+    h := UnivariatePolynomial(Resultant(f, g, y));
+    k := Parent(h) ! UnivariatePolynomial(Resultant(f, g, x));
+    h := h div GCD(h, Derivative(h));
+    k := k div GCD(k, Derivative(k));
+
+    D := Discriminant(h) * (1 / Discriminant(k));
+    m := 0;
+    while Evaluate(fn, [m, 1]) eq 0 or GCD(m, Numerator(D)) eq 1 do
+        m := m + 1;
+    end while;
+
+    H := Resultant(Evaluate(f, [m*(x + y), y]), Evaluate(g, [m*(x + y), y]), y);
+
+    return HasRealRoot(H);    
+end function;
 
 /*
     Input: A Crv C defined over Q.
@@ -34,9 +94,9 @@ IsLocallySoluble := function(C)
     if #SingularPoints(C) gt 0 or [0, 0, 1] in C then
         return true;
     end if;
-    D1 := AffinePatch(C, 1);
-    D2 := AffinePatch(C, 2);
-    D3 := AffinePatch(C, 3);
+    f1 := DefiningPolynomial(AffinePatch(C, 1));
+    f2 := DefiningPolynomial(AffinePatch(C, 2));
+    f3 := DefiningPolynomial(AffinePatch(C, 3));
     
 end function;
 
