@@ -24,13 +24,15 @@ SingularPlaneModel := function(C)
 end function;
 
 /*
-    Input: A sequence of nonzero univariate polynomials of length at least 2. An integer, whos sign tells whether or not to evaluate the sequence at plus or minus infinity.
+    Input: A sequence of univariate polynomials of length at least 2. An integer, whos sign tells whether or not to evaluate the sequence at plus or minus infinity.
     Output: The number of sign variations in the sequence.
 */
 SignVariations := function(polyseq, sign)
     valuations := [];
     for poly in polyseq do
-        if sign gt 0 then
+        if poly eq 0 then
+            valuations := Append(valuations, 0);
+        elif sign gt 0 then
             valuations := Append(valuations, LeadingCoefficient(poly));
         else
             if IsOdd(Degree(poly)) then
@@ -42,7 +44,7 @@ SignVariations := function(polyseq, sign)
     end for;
 
     changes := 0;
-    for i in [1..#polyseq - 2] do
+    for i in [1..#valuations-1] do
         if valuations[i] * valuations[i + 1] lt 0 then
             changes := changes + 1;
         end if;
@@ -58,11 +60,14 @@ HasRealRoot := function(f)
     if Degree(f) eq 0 then
         return f eq 0;
     end if;
+    if IsOdd(Degree(f)) then
+        return true;
+    end if;
 
     fi := f;
     fi1 := Derivative(f);
     remainders := [fi, fi1];
-    while Degree(fi1) ne 0 do
+    while fi1 ne 0 and Degree(fi1) ne 0 do
         r := -(fi mod fi1);
         remainders := Append(remainders, r);
         fi := fi1;
