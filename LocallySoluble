@@ -163,7 +163,7 @@ PotentiallyBadPrimes := function(f)
     Rx := BadPrimeDetector(f);
     Ry := BadPrimeDetector(Evaluate(f, [Parent(f).2, Parent(f).1]));
     R := LCM(Rx, Ry);
-    return PrimeDivisors(R);
+    return Set(PrimeDivisors(R));
 end function;
 
 /*
