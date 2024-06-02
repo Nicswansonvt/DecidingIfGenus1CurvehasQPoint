@@ -46,7 +46,7 @@ SignVariations := function(polyseq, sign)
     valuations := [];
     for poly in polyseq do
         if poly eq 0 then
-            valuations := Append(valuations, 0);
+            continue;
         elif sign gt 0 then
             valuations := Append(valuations, LeadingCoefficient(poly));
         else
@@ -174,17 +174,17 @@ IsLocallySoluble := function(C)
     if #SingularPoints(C) gt 0 or [0, 0, 1] in C then
         return true;
     end if;
+    F := DefiningPolynomial(C);
+    P<x, y> := PolynomialRing(Rationals(), 2);
     affine_patches := [
-        f1 := DefiningPolynomial(AffinePatch(C, 1)),
-        f2 := DefiningPolynomial(AffinePatch(C, 2)),
-        f3 := DefiningPolynomial(AffinePatch(C, 3)),
+        Evaluate(F, [1, x, y]),
+        Evaluate(F, [x, 1, y]),
+        Evaluate(F, [x, y, 1])
     ]
     
-
-    if HasRealSolution(f1) eq false or HasRealSolution(f2) eq false then
+    if HasRealSolution(affine_patches[1]) eq false or HasRealSolution(affine_patches[2]) eq false then
         return false;
     end if;
-    for 
     return 0;
 end function;
 
