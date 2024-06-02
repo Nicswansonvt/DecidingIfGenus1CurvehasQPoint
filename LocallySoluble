@@ -1,4 +1,19 @@
 /*
+    Input: A multi or univariate polynomial f defined over Q.
+    Output: The least common multiple of the denominators of the coefficients of f.
+*/
+ProductOfDenominators := function(f)
+    if f eq 0 then
+        return 0;
+    end if;
+    denoms := [];
+    for c in Coefficients(f) do
+        denoms := Append(denoms, Denominator(c));
+    end for;
+    return LCM(denoms);
+end function;
+
+/*
     Input: A Crv C defined over Q.
     Output: A projective plane curve C' defined over Q and a map proj such that proj is an isomorphism from C to C' away from the singular points of C'.
 */
@@ -124,6 +139,33 @@ HasRealSolution := function(f)
 end function;
 
 /*
+    Input: An irreducible bivariate polynomial f with integral coefficients.
+    Output: An integer analagous to the discriminant such that all primes dividing the integer are where C:f(x, y) = 0 has bad reduction.
+*/
+BadPrimeDetector := function(f)
+    PR := Parent(f);
+    x := PR.1;
+    y := PR.2;
+    h := UnivariatePolynomial(Resultant(f, Derivative(f, x), y));
+    UPR := Parent(h);
+    k := UPR ! UnivariatePolynomial(Resultant(f, Derivative(f, y), y)); 
+    gcd := GCD(h, k);
+    a := UPR ! (h div gcd);
+    b := UPR ! (k div gcd);
+    R := Resultant(a, b);
+end function;
+
+/*
+    Input: An irreducible bivariate polynomial f with integral coefficients.
+    Output: A set a primes S, such that f has a solution mod p for all primes outside of S.
+*/
+PotentiallyBadPrimes := function(f)
+    
+    
+    return S;
+end function;
+
+/*
     Input: A Crv C defined over Q.
     Output: true if C(Qp) has a point for all padic numbers. false otherwise.
 */
@@ -132,23 +174,18 @@ IsLocallySoluble := function(C)
     if #SingularPoints(C) gt 0 or [0, 0, 1] in C then
         return true;
     end if;
-    f1 := DefiningPolynomial(AffinePatch(C, 1));
-    f2 := DefiningPolynomial(AffinePatch(C, 2));
-    f3 := DefiningPolynomial(AffinePatch(C, 3));
+    affine_patches := [
+        f1 := DefiningPolynomial(AffinePatch(C, 1)),
+        f2 := DefiningPolynomial(AffinePatch(C, 2)),
+        f3 := DefiningPolynomial(AffinePatch(C, 3)),
+    ]
     
-end function;
 
-PolynomialMakeIntergal := function(f)
-    denom := [];
-    for coeff in Coefficients(f) do
-        denom := Append(denom, Denominator(coeff));
-    end for;
-    denom := LCM(denom);
-    return f * denom;
-end function;
-
-CurveToIntegralPolynomial := function(C)
-    return PolynomialMakeIntergal(DefiningPolynomial(C));
+    if HasRealSolution(f1) eq false or HasRealSolution(f2) eq false then
+        return false;
+    end if;
+    for 
+    return 0;
 end function;
 
 BadPrimeComputer := function(f)
