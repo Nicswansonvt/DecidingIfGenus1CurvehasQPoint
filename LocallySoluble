@@ -139,20 +139,20 @@ HasRealSolution := function(f)
 end function;
 
 /*
-    Input: An irreducible bivariate polynomial f with integral coefficients.
+    Input: An irreducible bivariate polynomial f with integral coefficients and positive degree in both variables.
     Output: An integer analagous to the discriminant such that all primes dividing the integer are where C:f(x, y) = 0 has bad reduction.
 */
 BadPrimeDetector := function(f)
-    PR := Parent(f);
-    x := PR.1;
-    y := PR.2;
-    h := UnivariatePolynomial(Resultant(f, Derivative(f, x), y));
-    UPR := Parent(h);
+    P<x, y> := PolynomialRing(Rationals(), 2);
+    UPR<z> := PolynomialRing(Integers());
+    f := P ! f;
+    h := UPR ! UnivariatePolynomial(Resultant(f, Derivative(f, x), y));
     k := UPR ! UnivariatePolynomial(Resultant(f, Derivative(f, y), y)); 
-    gcd := GCD(h, k);
-    a := UPR ! (h div gcd);
-    b := UPR ! (k div gcd);
-    R := Resultant(a, b);
+    G := GCD(h, k);
+    c := GCD(Coefficients(G));
+    A := h div gcd;
+    B := k div gcd;
+    R := c * Resultant(A, B);
 end function;
 
 /*
@@ -161,6 +161,9 @@ end function;
 */
 PotentiallyBadPrimes := function(f)
     S := [];
+    x := Parent(f).1;
+    y := Parent(f).2;
+    Rx := BadPrimeDetector(f);
     
     return S;
 end function;
