@@ -160,12 +160,10 @@ end function;
     Output: A set a primes S, such that f has a solution mod p for all primes outside of S.
 */
 PotentiallyBadPrimes := function(f)
-    S := [];
-    x := Parent(f).1;
-    y := Parent(f).2;
     Rx := BadPrimeDetector(f);
-    
-    return S;
+    Ry := BadPrimeDetector(Evaluate(f, [Parent(f).2, Parent(f).1]));
+    R := LCM(Rx, Ry);
+    return PrimeDivisors(R);
 end function;
 
 /*
