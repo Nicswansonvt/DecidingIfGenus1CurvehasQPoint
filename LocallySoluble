@@ -160,7 +160,7 @@ end function;
     Output: A set a primes S, such that f has a solution mod p for all primes outside of S.
 */
 PotentiallyBadPrimes := function(f)
-    
+    S := [];
     
     return S;
 end function;
@@ -175,16 +175,21 @@ IsLocallySoluble := function(C)
         return true;
     end if;
     F := DefiningPolynomial(C);
+    if Coefficients(F) subset Integers() eq false then
+        F := ProductOfDenominators(F) * F;
+    end if;
     P<x, y> := PolynomialRing(Rationals(), 2);
     affine_patches := [
         Evaluate(F, [1, x, y]),
         Evaluate(F, [x, 1, y]),
         Evaluate(F, [x, y, 1])
-    ]
+    ];
     
     if HasRealSolution(affine_patches[1]) eq false or HasRealSolution(affine_patches[2]) eq false then
         return false;
     end if;
+
+    S := PotentiallyBadPrimes(affine_patches[1]) join PotentiallyBadPrimes(affine_patches[2]) join PotentiallyBadPrimes(affine_patches[3]);
     return 0;
 end function;
 
