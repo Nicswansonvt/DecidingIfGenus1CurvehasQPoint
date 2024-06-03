@@ -152,18 +152,47 @@ BadPrimeDetector := function(f)
     c := GCD(Coefficients(G));
     A := h div G;
     B := k div G;
+    A := A div GCD(A, Derivative(A));
+    B := B div GCD(B, Derivative(B));
     return c * Resultant(A, B);
+end function;
+
+/*
+    Input: An irreducible bivariate polynomial f with integral coefficients. A set of primes of potentially bad reduction.
+    Output: A set of primes such that f is gaurenteed to have bad reduction at said primes and non others.
+*/
+CertainBadPrimes := function(f, S)
+    C := Curve(AffineSpace(AlgebraicClosure(Rationals()), 2), [f]);
+    p := 2;
+    BadPrimes := [];
+    for p in S do
+        fp := PolynomialRing(GF(p), 2) ! f;
+        if Degree(fp) ne 0 then
+            Cp := Curve(AffineSpace(CoefficientRing(Parent(fp)), 2), [fp]);
+            if #SingularPoints(Cp) gt #SingularPoints(C) then
+                BadPrimes := Append(BadPrimes, p);
+            end if;
+        else
+            if fp eq 0 then
+                BadPrimes := Append(BadPrimes, p);
+            end if;
+        end if;
+    end for;
+    return Set(BadPrimes);
 end function;
 
 /*
     Input: An irreducible bivariate polynomial f with integral coefficients.
     Output: A set a primes S, such that f has a solution mod p for all primes outside of S.
 */
-PotentiallyBadPrimes := function(f)
+BadPrimes := function(f)
     Rx := BadPrimeDetector(f);
     Ry := BadPrimeDetector(Evaluate(f, [Parent(f).2, Parent(f).1]));
-    return Set(PrimeDivisors(Rx)) join Set(PrimeDivisors(Ry));
+    //This is the set of potentially bad primes of f.
+    Set(PrimeDivisors(Rx)) join Set(PrimeDivisors(Ry));
 end function;
+
+
 
 /*
     Input: An irreducible bivariate polynomial f(x, y) of nonzero x and y degree. A prime p.
@@ -232,6 +261,7 @@ IsLocallySoluble := function(C)
     end if;
 
     S := PotentiallyBadPrimes(affine_patches[1]) join PotentiallyBadPrimes(affine_patches[2]) join PotentiallyBadPrimes(affine_patches[3]);
+    S := BadPrimesForReal(affine_patches[1], S) join BadPrimesForReal(affine_patches[2], S) join BadPrimesForReal(affine_patches[3], S);
     d := Degree(F);
     s := #SingularPoints(Curve(ProjectiveSpace(AlgebraicClosure(), 2), [PolynomialRing(AlgebraicClosure(), 3) ! F]));
     B := (2*s - 2 + (d - 1)^2*(d - 2)^2 + (d - 1)*(d - 2)*Sqrt(4*s + (d - 1)^2*(d - 2)^2 - 4) ) / 2;
@@ -266,27 +296,6 @@ BadPrimeComputer := function(f)
     R := Resultant(a, b);
     factorization := PrimeDivisors(Integers() ! Numerator(R));
     return factorization;
-end function;
-
-BadPrimesForReal := function(f, range)
-    C := Curve(AffineSpace(AlgebraicClosure(Rationals()), 2), [f]);
-    p := 2;
-    BadPrimes := [];
-    for i in [1..range] do
-        fp := PolynomialRing(GF(p), 2) ! f;
-        if Degree(fp) ne 0 then
-            Cp := Curve(AffineSpace(CoefficientRing(Parent(fp)), 2), [fp]);
-            if #SingularPoints(Cp) gt #SingularPoints(C) then
-                BadPrimes := Append(BadPrimes, p);
-            end if;
-        else
-            if fp eq 0 then
-                BadPrimes := Append(BadPrimes, p);
-            end if;
-        end if;
-        p := NextPrime(p);
-    end for;
-    return BadPrimes;
 end function;
 
 RandomTest := function(d, S: RandomBound := 9)
