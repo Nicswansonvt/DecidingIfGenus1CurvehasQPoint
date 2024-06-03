@@ -215,10 +215,17 @@ HasPointOverPrime := function(f, p)
         end for;
     end for;
 
-    //At this point we gaurentee f has no singularities and the while loop will terminate.
-    //This is clearly the bottleneck of the locally soluble algorithm.
-    i := 1;
+    //At this point we gaurentee f has no singularities over Zp and the while loop will terminate.
+    Cp := Curve(AffineSpace(GF(p), 2), [f]); 
+    if #Points(Cp) eq 0 then
+        return false;
+    elif #Points(Cp) gt #SingularPoints(Cp) then
+        return true;
+    end if;
+    //Checking points modulo p is quick, but for non-fields magma has no Points(C) function
+    i := 2;
     while true do
+        print "Must iterate through %o^2 many tuples", p^i;
         is_empty := true;
         for a, b in [0..p^i - 1] do
             if Evaluate(f, [a, b]) mod p^i eq 0 then
