@@ -188,6 +188,7 @@ HasPointOverPrime := function(f, p)
     end for;
 
     //At this point we gaurentee f has no singularities and the while loop will terminate.
+    //This is clearly the bottleneck of the locally soluble algorithm.
     i := 1;
     while true do
         is_empty := true;
