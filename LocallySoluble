@@ -190,7 +190,7 @@ BadPrimes := function(f)
     Ry := BadPrimeDetector(Evaluate(f, [Parent(f).2, Parent(f).1]));
     //This is the set of potentially bad primes of f.
     potentially_bad_primes := Set(PrimeDivisors(Rx)) join Set(PrimeDivisors(Ry));
-    return PruneBadPrimes(potentially_bad_primes);
+    return PruneBadPrimes(f, potentially_bad_primes);
 end function;
 
 /*
