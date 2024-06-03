@@ -161,12 +161,12 @@ end function;
     Input: An irreducible bivariate polynomial f with integral coefficients. A set of primes of potentially bad reduction.
     Output: A set of primes such that f is gaurenteed to have bad reduction at said primes and non others.
 */
-CertainBadPrimes := function(f, S)
+PruneBadPrimes := function(f, S)
     C := Curve(AffineSpace(AlgebraicClosure(Rationals()), 2), [f]);
     p := 2;
     BadPrimes := [];
     for p in S do
-        fp := PolynomialRing(GF(p), 2) ! f;
+        fp := PolynomialRing(AlgebraicClosure(GF(p)), 2) ! f;
         if Degree(fp) ne 0 then
             Cp := Curve(AffineSpace(CoefficientRing(Parent(fp)), 2), [fp]);
             if #SingularPoints(Cp) gt #SingularPoints(C) then
@@ -189,10 +189,9 @@ BadPrimes := function(f)
     Rx := BadPrimeDetector(f);
     Ry := BadPrimeDetector(Evaluate(f, [Parent(f).2, Parent(f).1]));
     //This is the set of potentially bad primes of f.
-    Set(PrimeDivisors(Rx)) join Set(PrimeDivisors(Ry));
+    potentially_bad_primes := Set(PrimeDivisors(Rx)) join Set(PrimeDivisors(Ry));
+    return PruneBadPrimes(potentially_bad_primes);
 end function;
-
-
 
 /*
     Input: An irreducible bivariate polynomial f(x, y) of nonzero x and y degree. A prime p.
@@ -260,8 +259,7 @@ IsLocallySoluble := function(C)
         return false;
     end if;
 
-    S := PotentiallyBadPrimes(affine_patches[1]) join PotentiallyBadPrimes(affine_patches[2]) join PotentiallyBadPrimes(affine_patches[3]);
-    S := BadPrimesForReal(affine_patches[1], S) join BadPrimesForReal(affine_patches[2], S) join BadPrimesForReal(affine_patches[3], S);
+    S := BadPrimes(affine_patches[1]) join BadPrimes(affine_patches[2]) join BadPrimes(affine_patches[3]);
     d := Degree(F);
     s := #SingularPoints(Curve(ProjectiveSpace(AlgebraicClosure(), 2), [PolynomialRing(AlgebraicClosure(), 3) ! F]));
     B := (2*s - 2 + (d - 1)^2*(d - 2)^2 + (d - 1)*(d - 2)*Sqrt(4*s + (d - 1)^2*(d - 2)^2 - 4) ) / 2;
