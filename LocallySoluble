@@ -163,32 +163,33 @@ end function;
 */
 PruneBadPrimes := function(f, S)
     C := Curve(AffineSpace(AlgebraicClosure(Rationals()), 2), [f]);
-    BadPrimes := [];
+    pruned_set := [];
     for p in S do
         fp := PolynomialRing(AlgebraicClosure(GF(p)), 2) ! f;
         if Degree(fp) ne 0 and Degree(GCD(GCD(fp, Derivative(fp, Parent(fp).1)), Derivative(fp, Parent(fp).2))) eq 0 then
             Cp := Curve(AffineSpace(CoefficientRing(Parent(fp)), 2), [fp]);
             if #SingularPoints(Cp) gt #SingularPoints(C) then
-                BadPrimes := Append(BadPrimes, p);
+                pruned_set := Append(pruned_set, p);
             end if;
         else
             if fp eq 0 or Degree(GCD(GCD(fp, Derivative(fp, Parent(fp).1)), Derivative(fp, Parent(fp).2))) gt 0 then
-                BadPrimes := Append(BadPrimes, p);
+                pruned_set := Append(pruned_set, p);
             end if;
         end if;
     end for;
-    return Set(BadPrimes);
+    return Set(pruned_set);
 end function;
 
 /*
     Input: An irreducible bivariate polynomial f with integral coefficients.
     Output: A set a primes S, such that f has a solution mod p for all primes outside of S.
 */
-BadPrimes := function(f)
+PrimesOfBadReduction := function(f)
     Rx := BadPrimeDetector(f);
     Ry := BadPrimeDetector(Evaluate(f, [Parent(f).2, Parent(f).1]));
     //This is the set of potentially bad primes of f.
     potentially_bad_primes := Set(PrimeDivisors(Rx)) join Set(PrimeDivisors(Ry));
+    "Potentially Bad Primes: ", potentially_bad_primes;
     return PruneBadPrimes(f, potentially_bad_primes);
 end function;
 
@@ -200,9 +201,13 @@ HasPointOverPrime := function(f, p)
     //Determining if f has a padic singular point can be done using exact padic fields in up to date versions of magma.
     P<x, y> := PolynomialRing(Integers(), 2);
     f := P ! f;
-    pAdicPR := PolynomialRing(pAdicField(p));
-    h := pAdicPR ! UnivariatePolynomial(Resultant(Derivative(f, x), Derivative(f, y), y));
-    k := pAdicPR ! UnivariatePolynomial(Resultant(Derivative(f, x), Derivative(f, y), x));
+    infPrecisionPR := PolynomialRing(pAdicField(p, Infinity()));
+    h := infPrecisionPR ! UnivariatePolynomial(Resultant(Derivative(f, x), Derivative(f, y), y));
+    k := infPrecisionPR ! UnivariatePolynomial(Resultant(Derivative(f, x), Derivative(f, y), x));
+    prec := 2 * Max(SuggestedPrecision(h), SuggestedPrecision(k));
+    pAdicPR := PolynomialRing(pAdicField(p, prec));
+    pAdicPR ! h;
+    pAdicPR ! k;
     A := Roots(h);
     B := Roots(k);
     for a in A do
@@ -269,7 +274,7 @@ IsLocallySoluble := function(C)
         return false;
     end if;
 
-    S := BadPrimes(affine_patches[1]) join BadPrimes(affine_patches[2]) join BadPrimes(affine_patches[3]);
+    S := PrimesOfBadReduction(affine_patches[1]) join PrimesOfBadReduction(affine_patches[2]) join PrimesOfBadReduction(affine_patches[3]);
     d := Degree(F);
     s := #SingularPoints(Curve(ProjectiveSpace(AlgebraicClosure(), 2), [PolynomialRing(AlgebraicClosure(), 3) ! F]));
     B := (2*s - 2 + (d - 1)^2*(d - 2)^2 + (d - 1)*(d - 2)*Sqrt(4*s + (d - 1)^2*(d - 2)^2 - 4) ) / 2;
@@ -319,13 +324,13 @@ C := SingularPlaneModel(C);
     if HasRealSolution(affine_patches[1]) eq false and HasRealSolution(affine_patches[2]) eq false then
         continue;
     end if;
-
-    S := BadPrimes(affine_patches[1]) join BadPrimes(affine_patches[2]) join BadPrimes(affine_patches[3]);
+    "Has Real Points";
+    S := PrimesOfBadReduction(affine_patches[1]) join PrimesOfBadReduction(affine_patches[2]) join PrimesOfBadReduction(affine_patches[3]);
     d := Degree(F);
     s := #SingularPoints(Curve(ProjectiveSpace(AlgebraicClosure(), 2), [PolynomialRing(AlgebraicClosure(), 3) ! F]));
     B := (2*s - 2 + (d - 1)^2*(d - 2)^2 + (d - 1)*(d - 2)*Sqrt(4*s + (d - 1)^2*(d - 2)^2 - 4) ) / 2;
     S := S join Set(PrimesUpTo(Ceiling(B)));
-    S;
+    "Bad Primes", S;
     cont := false;
     for p in S meet Set(PrimesUpTo(15)) do
         has_point := false;
