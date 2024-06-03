@@ -166,6 +166,47 @@ PotentiallyBadPrimes := function(f)
 end function;
 
 /*
+    Input: An irreducible bivariate polynomial f(x, y) of nonzero x and y degree. A prime p.
+    Output: True if f has a point in Zp and False otherwise.
+*/
+HasPointOverPrime := function(f, p)
+    //Determining if f has a padic singular point can be done using exact padic fields in up to date versions of magma.
+    P<x, y> := PolynomialRing(Integers(), 2);
+    f := P ! f;
+    pAdicPR := PolynomialRing(pAdicField(p));
+    h := pAdicPR ! UnivariatePolynomial(Resultant(Derivative(f, x), Derivative(f, y), y));
+    k := pAdicPR ! UnivariatePolynomial(Resultant(Derivative(f, x), Derivative(f, y), x));
+    A := Roots(h);
+    B := Roots(k);
+    for a in A do
+        for b in B do
+            //This should be IsDefinitelyEqual() in the current version of magma.
+            if Evaluate(PolynomialRing(pAdicField(p), 2) ! f, [a[1], b[1]]) eq 0 then
+                return true;
+            end if;
+        end for;
+    end for;
+
+    //At this point we gaurentee f has no singularities and the while loop will terminate.
+    i := 1;
+    while true do
+        is_empty := true;
+        for a, b in [0..p^i - 1] do
+            if Evaluate(f, [a, b]) mod p^i eq 0 then
+                is_empty := false;
+                if Evaluate(Derivative(f, x), [a, b]) mod p^i ne 0 or Evaluate(Derivative(f, y), [a, b]) mod p^i ne 0 then
+                    return true;
+                end if;
+            end if;
+        end for;
+        if is_empty then
+            return false;
+        end if;
+        i +:= 1;
+    end while;
+end function;
+
+/*
     Input: A Crv C defined over Q.
     Output: true if C(Qp) has a point for all padic numbers. false otherwise.
 */
@@ -190,7 +231,25 @@ IsLocallySoluble := function(C)
     end if;
 
     S := PotentiallyBadPrimes(affine_patches[1]) join PotentiallyBadPrimes(affine_patches[2]) join PotentiallyBadPrimes(affine_patches[3]);
-    return 0;
+    d := Degree(F);
+    s := #SingularPoints(Curve(ProjectiveSpace(AlgebraicClosure(), 2), [PolynomialRing(AlgebraicClosure(), 3) ! F]));
+    B := (2*s - 2 + (d - 1)^2*(d - 2)^2 + (d - 1)*(d - 2)*Sqrt(4*s + (d - 1)^2*(d - 2)^2 - 4) ) / 2;
+    S := S join Set(PrimesUpTo(Ceiling(B)));
+
+    for p in S do
+        has_point := false;
+        for f in affine_patches do
+            if HasPointOverPrime(f, p) eq true then
+                has_point := true;
+                break;
+            end if;
+        end for;
+        if has_point eq false then
+            return false;
+        end if;
+    end for;
+
+    return true;
 end function;
 
 BadPrimeComputer := function(f)
