@@ -170,9 +170,7 @@ BadPrimeDetector := function(f)
     c := GCD(Coefficients(G));
     A := h div G;
     B := k div G;
-    A := A div GCD(A, Derivative(A));
-    B := B div GCD(B, Derivative(B));
-    return c * Resultant(A, B);
+    return c, Resultant(A, B);
 end function;
 
 /*
@@ -188,7 +186,7 @@ PruneBadPrimes := function(f, S)
             if fp eq 0 then
                 pruned_set := Append(pruned_set, p);
             end if;
-        elif IsSquarefree(fp) eq false then
+        elif IsSquarefree(fp) eq false or p eq 2 then
             pruned_set := Append(pruned_set, p);
         else
             Cp := Curve(AffineSpace(CoefficientRing(Parent(fp)), 2), [fp]);
@@ -205,10 +203,10 @@ end function;
     Output: A set a primes S, such that f has a solution mod p for all primes outside of S.
 */
 PrimesOfBadReduction := function(f)
-    Rx := BadPrimeDetector(f);
-    Ry := BadPrimeDetector(Evaluate(f, [Parent(f).2, Parent(f).1]));
+    c1, Rx := BadPrimeDetector(f);
+    c2, Ry := BadPrimeDetector(Evaluate(f, [Parent(f).2, Parent(f).1]));
     //This is the set of potentially bad primes of f.
-    potentially_bad_primes := Set(PrimeDivisors(Rx)) join Set(PrimeDivisors(Ry));
+    potentially_bad_primes := Set(PrimeDivisors(Rx)) join Set(PrimeDivisors(Ry)) join Set(PrimeDivisors(c1)) join Set(PrimeDivisors(c2));
     return PruneBadPrimes(f, potentially_bad_primes);
 end function;
 
@@ -240,7 +238,11 @@ IsLocallySoluble := function(C)
     d := Degree(F);
     s := #SingularPointsOverSplittingField(C);
     B := (2*s - 2 + (d - 1)^2*(d - 2)^2 + (d - 1)*(d - 2)*Sqrt(4*s + (d - 1)^2*(d - 2)^2 - 4) ) / 2;
-    S := S join Set(PrimesUpTo(Ceiling(B)));
+    B := Ceiling(B);
+    if B le 0 then
+        B := 1;
+    end if;
+    S := S join Set(PrimesUpTo(B));
 
     for p in S do
         if IsLocallySolvable(C, p) eq false then
@@ -252,11 +254,13 @@ IsLocallySoluble := function(C)
 end function;
 
 //////////////////////////Verifing the algorithm///////////////////
+n := 4; size := 10; total_tests := 300;
 differences_in_time := [];
-for j in [1..100] do
-    G1M := RandomGenusOneModel(3);
+for j in [1..total_tests] do
+    G1M := RandomGenusOneModel(n: Size := size);
     C := Curve(G1M);
     G1M;
+    DefiningPolynomial(SingularPlaneModel(C));
     start := Realtime();
     "Genus one is Locally Solvable: ", IsLocallySolvable(GenusOneModel(C));
     g1_time := Realtime(start);
@@ -267,15 +271,45 @@ for j in [1..100] do
     "Time taken: ", c_time;
 
     if IsLocallySoluble(C) ne IsLocallySolvable(GenusOneModel(C)) then
+        "FAILURE";
         break;
     end if;
 
     differences_in_time := Append(differences_in_time, c_time - g1_time);
-    if j mod 100 eq 0 then
+    if j mod 50 eq 0 then
         total_diff := 0;
         for delta in differences_in_time do
             total_diff +:= delta;
         end for;
-        "Average difference between times taken: ", total_diff / #differences_in_time; 
+        "Degree of Genus One Models: ", n;
+        "Max Coeffecient Size: ", size;
+        "Number of random tests verified: ", #differences_in_time;
+        "Average difference in time bewtween GenusOneModel IsLocallySolvable and this algorithm: ", total_diff / #differences_in_time;
+        "Max time taken: ", Max(differences_in_time);
+    end if;
+end for;
+/////////////////////////////Testing the algorithm///////////////////////
+g := 3; random_bound := 20; total_tests := 100;
+times_taken := [];
+for j in [1..total_tests] do
+    C := RandomCurveByGenus(g, Rationals(): RandomBound := random_bound);
+    C;
+
+    start := Realtime();
+    "IsLocally Soluble: ", IsLocallySoluble(C);
+    c_time := Realtime(start);
+    "Time taken: ", c_time;
+
+    times_taken := Append(times_taken, c_time);
+    if j mod 50 eq 0 then
+        total_diff := 0;
+        for delta in times_taken do
+            total_diff +:= delta;
+        end for;
+        "Genus: ", g;
+        "Max Coeffecient Size: ", random_bound;
+        "Number of random tests: ", #times_taken;
+        "Average time taken: ", total_diff / #times_taken;
+        "Max time taken: ", Max(times_taken);
     end if;
 end for;
