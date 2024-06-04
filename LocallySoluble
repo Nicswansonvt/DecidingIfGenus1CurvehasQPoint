@@ -209,71 +209,7 @@ PrimesOfBadReduction := function(f)
     Ry := BadPrimeDetector(Evaluate(f, [Parent(f).2, Parent(f).1]));
     //This is the set of potentially bad primes of f.
     potentially_bad_primes := Set(PrimeDivisors(Rx)) join Set(PrimeDivisors(Ry));
-    "Potentially Bad Primes: ", potentially_bad_primes;
     return PruneBadPrimes(f, potentially_bad_primes);
-end function;
-
-/*
-    Input: An irreducible bivariate polynomial f(x, y) of nonzero x and y degree. A prime p.
-    Output: True if f has a point in Zp and False otherwise.
-*/
-HasPointOverPrime := function(f, p)
-    //Determining if f has a padic singular point can be done using exact padic fields in up to date versions of magma.
-    P<x, y> := PolynomialRing(Integers(), 2);
-    f := P ! f;
-    pAdicPR := PolynomialRing(pAdicField(p));
-    h := pAdicPR ! UnivariatePolynomial(Resultant(Derivative(f, x), Derivative(f, y), y));
-    k := pAdicPR ! UnivariatePolynomial(Resultant(Derivative(f, x), Derivative(f, y), x));
-
-    prec := Precision(CoefficientRing(pAdicPR));
-    new_prec := 2 * Max(SuggestedPrecision(h), SuggestedPrecision(k));
-    while new_prec gt prec do
-        precisePAdicPR := PolynomialRing(pAdicField(p, prec));
-        h := precisePAdicPR ! h;
-        k := precisePAdicPR ! k;
-        prec := new_prec;
-        new_prec := 2 * Max(SuggestedPrecision(h), SuggestedPrecision(k));
-    end while;
-    A := Roots(h);
-    B := Roots(k);
-    for a in A do
-        for b in B do
-            //This should be IsDefinitelyEqual() in the current version of magma.
-            if Evaluate(PolynomialRing(pAdicField(p, new_prec), 2) ! f, [a[1], b[1]]) eq 0 then
-                return true;
-            end if;
-        end for;
-    end for;
-
-    //At this point we gaurentee f has no singularities over Zp and the while loop will terminate.
-    fp := PolynomialRing(GF(p), 2) ! f;
-    if Degree(fp) eq 0 then
-        return true;
-    end if;
-    Cp := Curve(AffineSpace(GF(p), 2), [SquarefreePart(fp)]); 
-    if #Points(Cp) eq 0 then
-        return false;
-    elif #Points(Cp) gt #SingularPoints(Cp) then
-        return true;
-    end if;
-    //Checking points modulo p is quick, but for non-fields magma has no Points(C) function
-    i := 2;
-    while true do
-        print "Must iterate through", p^i, "many tuples.";
-        is_empty := true;
-        for a, b in [0..p^i - 1] do
-            if Evaluate(f, [a, b]) mod p^i eq 0 then
-                is_empty := false;
-                if Evaluate(Derivative(f, x), [a, b]) mod p^i ne 0 or Evaluate(Derivative(f, y), [a, b]) mod p^i ne 0 then
-                    return true;
-                end if;
-            end if;
-        end for;
-        if is_empty then
-            return false;
-        end if;
-        i +:= 1;
-    end while;
 end function;
 
 /*
@@ -307,80 +243,39 @@ IsLocallySoluble := function(C)
     S := S join Set(PrimesUpTo(Ceiling(B)));
 
     for p in S do
-        has_point := false;
-        for f in affine_patches do
-            if HasPointOverPrime(f, p) eq true then
-                has_point := true;
-                break;
-            end if;
-        end for;
-        if has_point eq false then
+        if IsLocallySolvable(C, p) eq false then
             return false;
         end if;
     end for;
 
     return true;
 end function;
-/////////////////////////////////////////////
-for j in [1..100] do
-while true do
-    C := Curve(RandomGenusOneModel(3));
-    if IsLocallySolvable(GenusOneModel(C)) eq false then
-        break;
-    end if;
-end while;
 
-"Curve: ", C;
-"Is Locally Solvable: ", IsLocallySolvable(GenusOneModel(C));
-C := SingularPlaneModel(C);
-    if #SingularPoints(C) gt 0 or [0, 0, 1] in C then
-        continue;
-    end if;
-    F := DefiningPolynomial(C);
-    if Coefficients(F) subset Integers() eq false then
-        F := ProductOfDenominators(F) * F;
-    end if;
-    P<x, y> := PolynomialRing(Rationals(), 2);
-    affine_patches := [
-        Evaluate(F, [1, x, y]),
-        Evaluate(F, [x, 1, y]),
-        Evaluate(F, [x, y, 1])
-    ];
-    
-    if HasRealSolution(affine_patches[1]) eq false and HasRealSolution(affine_patches[2]) eq false then
-        continue;
-    end if;
-    "Has Real Points";
-    S := PrimesOfBadReduction(affine_patches[1]) join PrimesOfBadReduction(affine_patches[2]) join PrimesOfBadReduction(affine_patches[3]);
-    d := Degree(F);
-    s := #SingularPointsOverSplittingField(C);
-    B := (2*s - 2 + (d - 1)^2*(d - 2)^2 + (d - 1)*(d - 2)*Sqrt(4*s + (d - 1)^2*(d - 2)^2 - 4) ) / 2;
-    S := S join Set(PrimesUpTo(Ceiling(B)));
-    "Bad Primes", S;
-    cont := false;
-    for p in S meet Set(PrimesUpTo(15)) do
-        has_point := false;
-        for f in affine_patches do
-            if HasPointOverPrime(f, p) eq true then
-                has_point := true;
-                break;
-            end if;
-        end for;
-        if has_point eq false then
-            cont := true;
-            break;
-        end if;
-    end for;
-    if cont eq false then
+//////////////////////////Verifing the algorithm///////////////////
+differences_in_time := [];
+for j in [1..100] do
+    G1M := RandomGenusOneModel(3);
+    C := Curve(G1M);
+    G1M;
+    start := Realtime();
+    "Genus one is Locally Solvable: ", IsLocallySolvable(GenusOneModel(C));
+    g1_time := Realtime(start);
+    "Time taken: ", g1_time;
+    start := Realtime();
+    "Our is Locally Soluble: ", IsLocallySoluble(C);
+    c_time := Realtime(start);
+    "Time taken: ", c_time;
+
+    if IsLocallySoluble(C) ne IsLocallySolvable(GenusOneModel(C)) then
         break;
+    end if;
+
+    differences_in_time := Append(differences_in_time, c_time - g1_time);
+    if j mod 100 eq 0 then
+        total_diff := 0;
+        for delta in differences_in_time do
+            total_diff +:= delta;
+        end for;
+        "Average difference between times taken: ", total_diff / #differences_in_time; 
     end if;
 end for;
-
-has_point := false;
-        for f in affine_patches do
-            if HasPointOverPrime(f, p) eq true then
-                has_point := true;
-                break;
-            end if;
-        end for;
-has_point;
