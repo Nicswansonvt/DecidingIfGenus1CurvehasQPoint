@@ -139,6 +139,24 @@ HasRealSolution := function(f)
 end function;
 
 /*
+    Input: An irreducible bivariate polynomial f defined over a field.
+    Output: A field L such that all the coordinates of singularities of f are contained in L.
+*/
+SingularExtension := function(f)
+    P<x, y> := Parent(f);
+    field := CoefficientRing(P);
+    UPR<z> := PolynomialRing(field);
+    f := P ! f;
+    h := UPR ! UnivariatePolynomial(Resultant(f, Derivative(f, x), y));
+    k := UPR ! UnivariatePolynomial(Resultant(f, Derivative(f, y), y)); 
+    Gx := GCD(h, k);
+    h := UPR ! UnivariatePolynomial(Resultant(f, Derivative(f, x), x));
+    k := UPR ! UnivariatePolynomial(Resultant(f, Derivative(f, y), x));
+    Gy := GCD(h, k);
+    return SplittingField(LCM(Gx, Gy));
+end function;
+
+/*
     Input: An irreducible bivariate polynomial f with integral coefficients and positive degree in both variables.
     Output: An integer analagous to the discriminant such that all primes dividing the integer are where C:f(x, y) = 0 might have bad reduction.
 */
@@ -162,16 +180,14 @@ end function;
     Output: A set of primes such that f is gaurenteed to have bad reduction at said primes and non others.
 */
 PruneBadPrimes := function(f, S)
-    C := Curve(AffineSpace(AlgebraicClosure(Rationals()), 2), [f]);
+    C := Curve(AffineSpace(Rationals(), 2), [f]);
     pruned_set := [];
     for p in S do
-        fp := PolynomialRing(AlgebraicClosure(GF(p)), 2) ! f;
+        fp := PolynomialRing(GF(p), 2) ! f;
         if Degree(fp) ne 0 and Degree(GCD(GCD(fp, Derivative(fp, Parent(fp).1)), Derivative(fp, Parent(fp).2))) eq 0 then
             Cp := Curve(AffineSpace(CoefficientRing(Parent(fp)), 2), [fp]);
             "Non-Trivial Case:", Cp;
-            "C Singularities: ", #SingularPoints(C);
-            "Cp Singularities: ", #SingularPoints(Cp);
-            if #SingularPoints(Cp) gt #SingularPoints(C) then
+            if #SingularPointsOverSplittingField(Cp) gt #SingularPointsOverSplittingField(C) then
                 pruned_set := Append(pruned_set, p);
             end if;
         else
@@ -280,7 +296,7 @@ IsLocallySoluble := function(C)
 
     S := PrimesOfBadReduction(affine_patches[1]) join PrimesOfBadReduction(affine_patches[2]) join PrimesOfBadReduction(affine_patches[3]);
     d := Degree(F);
-    s := #SingularPoints(Curve(ProjectiveSpace(AlgebraicClosure(), 2), [PolynomialRing(AlgebraicClosure(), 3) ! F]));
+    s := #SingularPointsOverSplittingField(C);
     B := (2*s - 2 + (d - 1)^2*(d - 2)^2 + (d - 1)*(d - 2)*Sqrt(4*s + (d - 1)^2*(d - 2)^2 - 4) ) / 2;
     S := S join Set(PrimesUpTo(Ceiling(B)));
 
@@ -331,7 +347,7 @@ C := SingularPlaneModel(C);
     "Has Real Points";
     S := PrimesOfBadReduction(affine_patches[1]) join PrimesOfBadReduction(affine_patches[2]) join PrimesOfBadReduction(affine_patches[3]);
     d := Degree(F);
-    s := #SingularPoints(Curve(ProjectiveSpace(AlgebraicClosure(), 2), [PolynomialRing(AlgebraicClosure(), 3) ! F]));
+    s := #SingularPointsOverSplittingField(C);
     B := (2*s - 2 + (d - 1)^2*(d - 2)^2 + (d - 1)*(d - 2)*Sqrt(4*s + (d - 1)^2*(d - 2)^2 - 4) ) / 2;
     S := S join Set(PrimesUpTo(Ceiling(B)));
     "Bad Primes", S;
