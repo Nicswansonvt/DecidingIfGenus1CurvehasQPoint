@@ -186,12 +186,10 @@ PruneBadPrimes := function(f, S)
         fp := PolynomialRing(GF(p), 2) ! f;
         if Degree(fp) ne 0 and Degree(GCD(GCD(fp, Derivative(fp, Parent(fp).1)), Derivative(fp, Parent(fp).2))) eq 0 then
             Cp := Curve(AffineSpace(CoefficientRing(Parent(fp)), 2), [fp]);
-            "Non-Trivial Case:", Cp;
             if #SingularPointsOverSplittingField(Cp) gt #SingularPointsOverSplittingField(C) then
                 pruned_set := Append(pruned_set, p);
             end if;
         else
-            "Trivial Case";
             if fp eq 0 or Degree(GCD(GCD(fp, Derivative(fp, Parent(fp).1)), Derivative(fp, Parent(fp).2))) gt 0 then
                 pruned_set := Append(pruned_set, p);
             end if;
@@ -219,21 +217,27 @@ end function;
 */
 HasPointOverPrime := function(f, p)
     //Determining if f has a padic singular point can be done using exact padic fields in up to date versions of magma.
-    P<x, y> := PolynomialRing(Integers(), 2);
+    P<x, y> := PolynomialRing(Rationals(), 2);
     f := P ! f;
-    infPrecisionPR := PolynomialRing(pAdicField(p, Infinity()));
-    h := infPrecisionPR ! UnivariatePolynomial(Resultant(Derivative(f, x), Derivative(f, y), y));
-    k := infPrecisionPR ! UnivariatePolynomial(Resultant(Derivative(f, x), Derivative(f, y), x));
-    prec := 2 * Max(SuggestedPrecision(h), SuggestedPrecision(k));
-    pAdicPR := PolynomialRing(pAdicField(p, prec));
-    h := pAdicPR ! h;
-    k := pAdicPR ! k;
+    pAdicPR := PolynomialRing(pAdicField(p));
+    h := pAdicPR ! UnivariatePolynomial(Resultant(Derivative(f, x), Derivative(f, y), y));
+    k := pAdicPR ! UnivariatePolynomial(Resultant(Derivative(f, x), Derivative(f, y), x));
+
+    prec := Precision(pAdicPR);
+    new_prec := 2 * Max(SuggestedPrecision(h), SuggestedPrecision(k));
+    while new_prec gt prec do
+        precisePAdicPR := PolynomialRing(pAdicField(p, prec));
+        h := precisePAdicPR ! h;
+        k := precisePAdicPR ! k;
+        prec := new_prec;
+        new_prec := 2 * Max(SuggestedPrecision(h), SuggestedPrecision(k));
+    end while;
     A := Roots(h);
     B := Roots(k);
     for a in A do
         for b in B do
             //This should be IsDefinitelyEqual() in the current version of magma.
-            if Evaluate(PolynomialRing(pAdicField(p, prec), 2) ! f, [a[1], b[1]]) eq 0 then
+            if Evaluate(PolynomialRing(pAdicField(p, new_prec), 2) ! f, [a[1], b[1]]) eq 0 then
                 return true;
             end if;
         end for;
@@ -317,12 +321,12 @@ IsLocallySoluble := function(C)
 end function;
 /////////////////////////////////////////////
 for j in [1..100] do
-for i in [1..100] do
+while true do
     C := Curve(RandomGenusOneModel(3));
     if IsLocallySolvable(GenusOneModel(C)) eq false then
         break;
     end if;
-end for;
+end while;
 
 "Curve: ", C;
 "Is Locally Solvable: ", IsLocallySolvable(GenusOneModel(C));
