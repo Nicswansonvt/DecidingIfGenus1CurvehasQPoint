@@ -177,20 +177,22 @@ end function;
 
 /*
     Input: An irreducible bivariate polynomial f with integral coefficients. A set of primes of potentially bad reduction.
-    Output: A set of primes such that f is gaurenteed to have bad reduction at said primes and non others.
+    Output: A subset of the primes such that f has good reduction at primes outside the set. Note, there is still possibly primes of good reduction in this set.
 */
 PruneBadPrimes := function(f, S)
     C := Curve(AffineSpace(Rationals(), 2), [f]);
     pruned_set := [];
     for p in S do
         fp := PolynomialRing(GF(p), 2) ! f;
-        if Degree(fp) ne 0 and Degree(GCD(GCD(fp, Derivative(fp, Parent(fp).1)), Derivative(fp, Parent(fp).2))) eq 0 then
-            Cp := Curve(AffineSpace(CoefficientRing(Parent(fp)), 2), [fp]);
-            if #SingularPointsOverSplittingField(Cp) gt #SingularPointsOverSplittingField(C) then
+        if Degree(fp) eq 0 then
+            if fp eq 0 then
                 pruned_set := Append(pruned_set, p);
             end if;
+        elif IsSquarefree(fp) eq false then
+            pruned_set := Append(pruned_set, p);
         else
-            if fp eq 0 or Degree(GCD(GCD(fp, Derivative(fp, Parent(fp).1)), Derivative(fp, Parent(fp).2))) gt 0 then
+            Cp := Curve(AffineSpace(CoefficientRing(Parent(fp)), 2), [fp]);
+            if #SingularPointsOverSplittingField(Cp) gt #SingularPointsOverSplittingField(C) then
                 pruned_set := Append(pruned_set, p);
             end if;
         end if;
@@ -217,13 +219,13 @@ end function;
 */
 HasPointOverPrime := function(f, p)
     //Determining if f has a padic singular point can be done using exact padic fields in up to date versions of magma.
-    P<x, y> := PolynomialRing(Rationals(), 2);
+    P<x, y> := PolynomialRing(Integers(), 2);
     f := P ! f;
     pAdicPR := PolynomialRing(pAdicField(p));
     h := pAdicPR ! UnivariatePolynomial(Resultant(Derivative(f, x), Derivative(f, y), y));
     k := pAdicPR ! UnivariatePolynomial(Resultant(Derivative(f, x), Derivative(f, y), x));
 
-    prec := Precision(pAdicPR);
+    prec := Precision(CoefficientRing(pAdicPR));
     new_prec := 2 * Max(SuggestedPrecision(h), SuggestedPrecision(k));
     while new_prec gt prec do
         precisePAdicPR := PolynomialRing(pAdicField(p, prec));
@@ -245,10 +247,10 @@ HasPointOverPrime := function(f, p)
 
     //At this point we gaurentee f has no singularities over Zp and the while loop will terminate.
     fp := PolynomialRing(GF(p), 2) ! f;
-    if Degree(fp) eq 0 or Degree(GCD(GCD(fp, Derivative(fp, Parent(fp).1)), Derivative(fp, Parent(fp).2))) gt 0 then
+    if Degree(fp) eq 0 then
         return true;
     end if;
-    Cp := Curve(AffineSpace(GF(p), 2), [fp]); 
+    Cp := Curve(AffineSpace(GF(p), 2), [SquarefreePart(fp)]); 
     if #Points(Cp) eq 0 then
         return false;
     elif #Points(Cp) gt #SingularPoints(Cp) then
