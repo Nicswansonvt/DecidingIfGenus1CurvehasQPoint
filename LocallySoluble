@@ -161,13 +161,16 @@ end function;
     Output: An integer analagous to the discriminant such that all primes dividing the integer are where C:f(x, y) = 0 might have bad reduction.
 */
 BadPrimeDetector := function(f)
-    P<x, y> := PolynomialRing(Rationals(), 2);
+    P<x, y> := PolynomialRing(Integers(), 2);
     UPR<z> := PolynomialRing(Integers());
     f := P ! f;
     h := UPR ! UnivariatePolynomial(Resultant(f, Derivative(f, x), y));
     k := UPR ! UnivariatePolynomial(Resultant(f, Derivative(f, y), y)); 
+    c := GCD(Coefficients(h)) * GCD(Coefficients(k));
+    h := h div GCD(Coefficients(h));
+    k := k div GCD(Coefficients(k));
     G := GCD(h, k);
-    c := GCD(Coefficients(G));
+    c := c * GCD(Coefficients(G));
     A := h div G;
     B := k div G;
     return c, Resultant(A, B);
@@ -254,7 +257,7 @@ IsLocallySoluble := function(C)
 end function;
 
 //////////////////////////Verifing the algorithm///////////////////
-n := 4; size := 10; total_tests := 300;
+n := 4; size := 10; total_tests := 500;
 differences_in_time := [];
 for j in [1..total_tests] do
     G1M := RandomGenusOneModel(n: Size := size);
@@ -289,7 +292,7 @@ for j in [1..total_tests] do
     end if;
 end for;
 /////////////////////////////Testing the algorithm///////////////////////
-g := 3; random_bound := 20; total_tests := 100;
+g := 3; random_bound := 10; total_tests := 100;
 times_taken := [];
 for j in [1..total_tests] do
     C := RandomCurveByGenus(g, Rationals(): RandomBound := random_bound);
