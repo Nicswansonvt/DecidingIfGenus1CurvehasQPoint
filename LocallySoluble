@@ -257,7 +257,7 @@ IsLocallySoluble := function(C)
 end function;
 
 //////////////////////////Verifing the algorithm///////////////////
-n := 4; size := 10; total_tests := 500;
+n := 3; size := 200; total_tests := 500;
 differences_in_time := [];
 for j in [1..total_tests] do
     G1M := RandomGenusOneModel(n: Size := size);
@@ -316,3 +316,52 @@ for j in [1..total_tests] do
         "Max time taken: ", Max(times_taken);
     end if;
 end for;
+//////////////////////////////PruneBadPrimeData////////////////////////
+n := 3; size := 100; total_tests := 1000;
+largest_bad_prime_data := [];
+for j in [1..total_tests] do
+    G1M := RandomGenusOneModel(n: Size := size);
+    C := Curve(G1M);
+    G1M;
+
+    C := SingularPlaneModel(C);
+    if #SingularPoints(C) gt 0 or [0, 0, 1] in C then
+        continue;
+    end if;
+    F := DefiningPolynomial(C);
+    if Coefficients(F) subset Integers() eq false then
+        F := ProductOfDenominators(F) * F;
+    end if;
+    P<x, y> := PolynomialRing(Rationals(), 2);
+    affine_patches := [
+        Evaluate(F, [1, x, y]),
+        Evaluate(F, [x, 1, y]),
+        Evaluate(F, [x, y, 1])
+    ];
+    
+    if HasRealSolution(affine_patches[1]) eq false or HasRealSolution(affine_patches[2]) eq false then
+        continue;
+    end if;
+    largest_pbp := 2;
+    largest_rbp := 2;
+    
+    for f in affine_patches do
+        c1, Rx := BadPrimeDetector(f);
+        c2, Ry := BadPrimeDetector(Evaluate(f, [Parent(f).2, Parent(f).1]));
+        //This is the set of potentially bad primes of f.
+        potentially_bad_primes := Set(PrimeDivisors(Rx)) join Set(PrimeDivisors(Ry)) join Set(PrimeDivisors(c1)) join Set(PrimeDivisors(c2));
+        if largest_pbp lt Max(potentially_bad_primes) then
+            largest_pbp := Max(potentially_bad_primes);
+        end if;
+        bad_primes := PruneBadPrimes(f, potentially_bad_primes);
+        if largest_rbp lt Max(bad_primes) then
+            largest_rbp := Max(bad_primes);
+        end if;
+    end for;
+    prod := 1;
+    for coef in Coefficients(F) do
+        prod *:= coef;
+    end for;
+    largest_bad_prime_data := Append(largest_bad_prime_data, [largest_pbp, largest_rbp, Max(Coefficients(F)), prod]);
+end for;
+Write("Desktop/MAGMAPBD.txt", largest_bad_prime_data);
