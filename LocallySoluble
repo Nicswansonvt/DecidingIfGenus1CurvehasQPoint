@@ -319,6 +319,7 @@ end for;
 //////////////////////////////PruneBadPrimeData////////////////////////
 n := 3; size := 100; total_tests := 1000;
 largest_bad_prime_data := [];
+max_curve := 0;
 for j in [1..total_tests] do
     G1M := RandomGenusOneModel(n: Size := size);
     C := Curve(G1M);
@@ -356,6 +357,10 @@ for j in [1..total_tests] do
         bad_primes := PruneBadPrimes(f, potentially_bad_primes);
         if largest_rbp lt Max(bad_primes) then
             largest_rbp := Max(bad_primes);
+        end if;
+        if largest_rbp eq largest_pbp then
+            max_curve := F;
+            return C;
         end if;
     end for;
     prod := 1;
