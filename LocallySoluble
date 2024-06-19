@@ -35,6 +35,7 @@ SingularPlaneModel := function(C)
         Cnew, mapnew := Projection(Cnew);
         map := map * mapnew;
     end while;
+    Cnew := Curve(Cnew);
     return Cnew, Restriction(map, C, Cnew);
 end function;
 
