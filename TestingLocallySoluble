@@ -1,0 +1,115 @@
+
+//////////////////////////Verifing the algorithm///////////////////
+n := 3; size := 200; total_tests := 500;
+differences_in_time := [];
+for j in [1..total_tests] do
+    G1M := RandomGenusOneModel(n: Size := size);
+    C := Curve(G1M);
+    G1M;
+    DefiningPolynomial(SingularPlaneModel(C));
+    start := Realtime();
+    "Genus one is Locally Solvable: ", IsLocallySolvable(GenusOneModel(C));
+    g1_time := Realtime(start);
+    "Time taken: ", g1_time;
+    start := Realtime();
+    "Our is Locally Soluble: ", IsLocallySoluble(C);
+    c_time := Realtime(start);
+    "Time taken: ", c_time;
+
+    if IsLocallySoluble(C) ne IsLocallySolvable(GenusOneModel(C)) then
+        "FAILURE";
+        break;
+    end if;
+
+    differences_in_time := Append(differences_in_time, c_time - g1_time);
+    if j mod 50 eq 0 then
+        total_diff := 0;
+        for delta in differences_in_time do
+            total_diff +:= delta;
+        end for;
+        "Degree of Genus One Models: ", n;
+        "Max Coeffecient Size: ", size;
+        "Number of random tests verified: ", #differences_in_time;
+        "Average difference in time bewtween GenusOneModel IsLocallySolvable and this algorithm: ", total_diff / #differences_in_time;
+        "Max time taken: ", Max(differences_in_time);
+    end if;
+end for;
+/////////////////////////////Testing the algorithm///////////////////////
+g := 3; random_bound := 10; total_tests := 100;
+times_taken := [];
+for j in [1..total_tests] do
+    C := RandomCurveByGenus(g, Rationals(): RandomBound := random_bound);
+    C;
+
+    start := Realtime();
+    "IsLocally Soluble: ", IsLocallySoluble(C);
+    c_time := Realtime(start);
+    "Time taken: ", c_time;
+
+    times_taken := Append(times_taken, c_time);
+    if j mod 50 eq 0 then
+        total_diff := 0;
+        for delta in times_taken do
+            total_diff +:= delta;
+        end for;
+        "Genus: ", g;
+        "Max Coeffecient Size: ", random_bound;
+        "Number of random tests: ", #times_taken;
+        "Average time taken: ", total_diff / #times_taken;
+        "Max time taken: ", Max(times_taken);
+    end if;
+end for;
+//////////////////////////////PruneBadPrimeData////////////////////////
+n := 3; size := 100; total_tests := 1000;
+largest_bad_prime_data := [];
+max_curve := 0;
+for j in [1..total_tests] do
+    G1M := RandomGenusOneModel(n: Size := size);
+    C := Curve(G1M);
+    G1M;
+
+    C := SingularPlaneModel(C);
+    if #SingularPoints(C) gt 0 or [0, 0, 1] in C then
+        continue;
+    end if;
+    F := DefiningPolynomial(C);
+    if Coefficients(F) subset Integers() eq false then
+        F := ProductOfDenominators(F) * F;
+    end if;
+    P<x, y> := PolynomialRing(Rationals(), 2);
+    affine_patches := [
+        Evaluate(F, [1, x, y]),
+        Evaluate(F, [x, 1, y]),
+        Evaluate(F, [x, y, 1])
+    ];
+    
+    if HasRealSolution(affine_patches[1]) eq false or HasRealSolution(affine_patches[2]) eq false then
+        continue;
+    end if;
+    largest_pbp := 2;
+    largest_rbp := 2;
+    
+    for f in affine_patches do
+        c1, Rx := BadPrimeDetector(f);
+        c2, Ry := BadPrimeDetector(Evaluate(f, [Parent(f).2, Parent(f).1]));
+        //This is the set of potentially bad primes of f.
+        potentially_bad_primes := Set(PrimeDivisors(Rx)) join Set(PrimeDivisors(Ry)) join Set(PrimeDivisors(c1)) join Set(PrimeDivisors(c2));
+        if largest_pbp lt Max(potentially_bad_primes) then
+            largest_pbp := Max(potentially_bad_primes);
+        end if;
+        bad_primes := PruneBadPrimes(f, potentially_bad_primes);
+        if largest_rbp lt Max(bad_primes) then
+            largest_rbp := Max(bad_primes);
+        end if;
+        if largest_rbp eq largest_pbp then
+            max_curve := F;
+            return C;
+        end if;
+    end for;
+    prod := 1;
+    for coef in Coefficients(F) do
+        prod *:= coef;
+    end for;
+    largest_bad_prime_data := Append(largest_bad_prime_data, [largest_pbp, largest_rbp, Max(Coefficients(F)), prod]);
+end for;
+Write("Desktop/MAGMAPBD.txt", largest_bad_prime_data);
