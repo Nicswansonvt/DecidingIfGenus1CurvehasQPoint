@@ -2,17 +2,20 @@ By Nicolas Swanson
 
 This is the code accompaning my Master's Thesis linked here: https://hdl.handle.net/10919/119085
 
-The only code here that has been tested is the code in the LocallySoluble file which contains a bunch of MAGMA functions to determine Local Solubility of an arbitrary genus one curve. The other files are unfinished
+The only code here that has been tested is the code in the LocallySoluble file which contains a bunch of MAGMA functions to determine Local Solubility of an arbitrary curve. The other files are unfinished
+
 The main function here is the IsLocallySoluble() function:
 /*
     Input: A Crv C defined over Q.
     Output: true if C(Qp) has a point for all padic numbers. false otherwise.
 */
-The algorithm requires factoring a number that is incredibly large even for small examples, so a thourough runtime analysis has not been done.
-In practice, this algorithm should almost never be used.
-There is a function already in MAGMA by the same name (https://magma.maths.usyd.edu.au/magma/handbook/text/1540#17797), that runs at least exponentially quicker; however, the input to this function is a not a Crv object but instead a ModelG1 object.
-These ModelG1 objects were created for the purpose of performing decent on elliptic curves, and are used to perform 2, 3, and 5 decent (https://magma.maths.usyd.edu.au/magma/handbook/text/1534).
-Only a small porportion of genus one curves have an associated ModelG1 object, and the purpose of the algorithm written here is to provide a naive algorithm that does not require the ModelG1 object.
+
+The algorithm requires factoring a number that is incredibly large even for small examples, so a thourough runtime analysis has not been done. In practice, this algorithm should almost never be used. For some genus 1 curves, there is a function already in MAGMA by a similar name (https://magma.maths.usyd.edu.au/magma/handbook/text/1540#17797), that runs at least exponentially quicker; however, the input to this function is a not a Crv object but instead a ModelG1 object. These ModelG1 objects were created for the purpose of performing decent on elliptic curves, and are used to perform 2, 3, and 5 decent (https://magma.maths.usyd.edu.au/magma/handbook/text/1534). Only a small porportion of genus one curves have an associated ModelG1 object, and the purpose of the algorithm written here is to provide a naive algorithm that does not require the ModelG1 object.
 
 
+First, copy and paste the contents of the LocallySoluble file.
 Example usage:
+PSpace<x, y, z> := ProjectiveSpace(Rationals(), 2);
+C := Curve(PSpace, 3*x^3 + 4*y^3 + 5*z^3);
+IsLocallySoluble(C);
+
